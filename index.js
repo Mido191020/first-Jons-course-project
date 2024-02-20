@@ -2,6 +2,9 @@
     const http=require("http");
     const url=require("url");
     const fs=require("fs");
+        //export replaceTemplate moduels
+    const replaceTemplate=require('./modules/replaceTemplate');
+
     //FILES
     //we mak sync beacyse we in the top level of the program and we executed once
     //we dont put it on the createServer function beacuse it will relod each time 
@@ -13,18 +16,7 @@
     const data=fs.readFileSync('./data.json','utf-8');
     const objData=JSON.parse(data);
 
-    const replaceTemplate=(temp,product)=>{
-        let output=temp.replace(/{%PRODUCTNAME%}/g,product.productName);
-        output=output.replace(/{%IMAGE%}/g,product.image);
-        output=output.replace(/{%PRICE%}/g,product.price);
-        output=output.replace(/{%FROM%}/g,product.from);
-        output = output.replace(/{%NUTRIENTS%}/g, product.nutrients);
-        output=output.replace(/{%QUANTITY%}/g,product.quantity);
-        output=output.replace(/{%DESCRIPTION%}/g,product.description);
-        output=output.replace(/{%ID%}/g,product.id);
-        if(!product.organic) output=output.replace(/{%NOT_ORGANIC%}/g,'not-organic');
-        return output;
-    } 
+    
     //SERVER
     const Server=http.createServer((req,res)=>{
     const {query, pathname}=url.parse(req.url,true);
