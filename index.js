@@ -1,28 +1,79 @@
-//moduels http ,url,fs
-const http=require("http");
-const url=require("url");
-const fs=require("fs");
-const data=fs.readFileSync('./data.json','utf-8');
-const objData=JSON.parse(data);
-const Server=http.createServer((req,res)=>{
-    const pathName=req.url;
-    if(pathName==='/'||pathName==='overview'){
-        res.end(fs.readFileSync("hello.txt","utf-8"));
-    }
-    else if(pathName==='/api'){
-       res.writeHead(200,{'Content-type' : 'application/json'});
-        res.end(data);
-    }
-    else{
-        
-        res.writeHead(404,{
-            'content-type':'text/html',
-            'my-own-header':'hello-world'
-        });
-        res.end('<h1>Page not found! </h1>');
-    }
+    //moduels http ,url,fs
+    const http=require("http");
+    const url=require("url");
+    const fs=require("fs");
+    //FILES
+    //we mak sync beacyse we in the top level of the program and we executed once
+    //we dont put it on the createServer function beacuse it will relod each time 
+    const templateOverview=fs.readFileSync(`${__dirname}/templates/templates-overview.html`,'utf-8');
+    const templateCard=fs.readFileSync(`${__dirname}/templates/templates-card.html`,'utf-8');
+    const templateProduct=fs.readFileSync(`${__dirname}/templates/templates-product.html`,'utf-8');
 
-})
-Server.listen(3000,()=>{
-    console.log('listing to port 3000');
-});
+
+    const data=fs.readFileSync('./data.json','utf-8');
+    const objData=JSON.parse(data);
+
+    const replaceTemplate=(temp,product)=>{
+        let output=temp.replace(/{%PRODUCTNAME%}/g,product.productName);
+        output=output.replace(/{%IMAGE%}/g,product.image);
+        output=output.replace(/{%PRICE%}/g,product.price);
+        output=output.replace(/{%FROM%}/g,product.from);
+        output = output.replace(/{%NUTRIENTS%}/g, product.nutrients);
+        output=output.replace(/{%QUANTITY%}/g,product.quantity);
+        output=output.replace(/{%DESCRIPTION%}/g,product.description);
+        output=output.replace(/{%ID%}/g,product.id);
+        if(!product.organic) output=output.replace(/{%NOT_ORGANIC%}/g,'not-organic');
+        return output;
+    } 
+    //SERVER
+    const Server=http.createServer((req,res)=>{
+    const {query, pathname}=url.parse(req.url,true);
+    
+        //overview page
+
+        if(pathname==='/'||pathname==='/overview'){
+
+            res.writeHead(200,{'Content-type' : 'text/html'});
+            const cardsHtml=objData.map(el=> replaceTemplate(templateCard,el)); // Corrected 'temp' to 'templateCard'
+            const output=templateOverview.replace('{%PRODUCT_CARDS%}',cardsHtml);
+            res.end(output);
+        }
+
+            //Product page
+    
+           // Inside the '/product' route handler
+else if (pathname === '/product') {
+    const productId = query.id;
+    const product = objData.find(el => el.id === productId);
+    if (product) {
+        res.writeHead(200, { 'Content-type': 'text/html' });
+        // Use the replaceTemplate function to replace placeholders with product data
+        const output = replaceTemplate(templateProduct, product);
+        res.end(output);
+    } else {
+        res.writeHead(404, { 'Content-type': 'text/html' });
+        res.end('<h1>Product not found!</h1>');
+    }
+}
+
+
+        //API PAGE
+        else if(pathname==='/api'){
+        res.writeHead(200,{'Content-type' : 'application/json'});
+            res.end(data);
+        }
+
+        // NOT FOUND
+        else{
+            
+            res.writeHead(404,{
+                'content-type':'text/html',
+                'my-own-header':'hello-world'
+            });
+            res.end('<h1>Page not found! </h1>');
+        }
+
+    })
+    Server.listen(3000,()=>{
+        console.log('listing to port 3000');
+    });
